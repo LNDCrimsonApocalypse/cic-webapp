@@ -29,7 +29,7 @@ export default function Footer() {
               <p>Center for Integrated Communications</p>
               <p>University of Makati</p>
               <p>J.P. Rizal Extension, West Rembo</p>
-              <p>Makati City, Metro Manila</p>
+              <p>Taguig City, Metro Manila</p>
               <p className="pt-2">
                 <a href="mailto:cic@umak.edu.ph" className="hover:text-umak-blue transition-colors">
                   cic@umak.edu.ph
