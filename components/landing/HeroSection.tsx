@@ -42,7 +42,7 @@ export default function HeroSection() {
               Services
             </h1>
             <p className="text-lg sm:text-xl text-gray-600 font-metropolis mb-10 leading-relaxed max-w-2xl">
-              Professional design, video, event coverage, and digital communication services for the University of Makati community.
+              Professional design, video, event coverage, and digital communication services for the University of Makati (UMak) community.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <button
