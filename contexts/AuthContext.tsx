@@ -16,8 +16,9 @@ interface AuthContextType {
   user: User | null
   profile: Profile | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>
+  signIn: (email: string, password: string) => Promise<{ error: Error | null; role?: string }>
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null; role?: string }>
+  signInWithGoogle: () => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
   isAdmin: boolean
   isConfigured: boolean
@@ -39,6 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading: false,
       signIn: async () => ({ error: new Error('Supabase not configured. Please set up environment variables.') }),
       signUp: async () => ({ error: new Error('Supabase not configured. Please set up environment variables.') }),
+      signInWithGoogle: async () => ({ error: new Error('Supabase not configured. Please set up environment variables.') }),
       signOut: async () => {},
       isAdmin: false,
       isConfigured: false,
@@ -119,14 +121,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const { error } = await supabaseClient.auth.signInWithPassword({
+      const { data: authData, error } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) throw error
 
-      return { error: null }
+      // Fetch role for redirect decision
+      let role = 'user'
+      if (authData.user) {
+        const { data: profileData } = await supabaseClient
+          .from('profiles')
+          .select('role')
+          .eq('id', authData.user.id)
+          .single()
+        if (profileData?.role) role = profileData.role
+      }
+
+      return { error: null, role }
     } catch (error) {
       return { error: error as Error }
     }
@@ -165,6 +178,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (profileError) throw profileError
       }
 
+      return { error: null, role: 'user' }
+    } catch (error) {
+      return { error: error as Error }
+    }
+  }
+
+  // Sign in with Google
+  const signInWithGoogle = async () => {
+    if (!supabaseClient) {
+      return { error: new Error('Supabase not configured') }
+    }
+
+    try {
+      const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+
+      if (error) throw error
+
       return { error: null }
     } catch (error) {
       return { error: error as Error }
@@ -193,6 +228,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     signIn,
     signUp,
+    signInWithGoogle,
     signOut,
     isAdmin,
     isConfigured: true,

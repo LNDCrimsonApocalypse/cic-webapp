@@ -1,15 +1,60 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { format } from 'date-fns'
 import DashboardHeader from '@/components/dashboard/DashboardHeader'
 import PriorityBadge from '@/components/dashboard/PriorityBadge'
 import StatusBadge from '@/components/dashboard/StatusBadge'
+import { supabaseClient } from '@/lib/supabase'
 import { mockSubmissions, Submission } from '@/lib/mockData'
+import { REQUEST_TYPES } from '@/lib/constants'
+
+function getTypeLabel(typeId: string): string {
+  return REQUEST_TYPES.find(t => t.id === typeId)?.label ?? typeId
+}
 
 export default function SubmissionsPage() {
-  const [submissions, setSubmissions] = useState<Submission[]>(mockSubmissions)
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState<string>('All')
   const [filterPriority, setFilterPriority] = useState<string>('All')
+
+  useEffect(() => {
+    async function fetchSubmissions() {
+      if (!supabaseClient) {
+        setSubmissions(mockSubmissions)
+        setLoading(false)
+        return
+      }
+      const { data, error } = await supabaseClient
+        .from('submissions')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (data) {
+        setSubmissions(
+          data.map((row: any) => ({
+            id: row.id,
+            name: row.name,
+            email: row.email,
+            phone: row.phone ?? undefined,
+            details: row.details,
+            type: row.type,
+            priority: row.priority,
+            status: row.status,
+            assignee: row.assignee ?? undefined,
+            createdAt: new Date(row.created_at),
+            updatedAt: row.updated_at ? new Date(row.updated_at) : new Date(row.created_at),
+          }))
+        )
+      }
+      if (error) {
+        console.error('Failed to fetch submissions:', error)
+        setSubmissions(mockSubmissions)
+      }
+      setLoading(false)
+    }
+    fetchSubmissions()
+  }, [])
 
   // Filter logic
   const filteredSubmissions = submissions.filter((submission) => {
@@ -63,6 +108,11 @@ export default function SubmissionsPage() {
         </div>
 
         {/* Submissions Table */}
+        {loading ? (
+          <div className="flex items-center justify-center py-24">
+            <div className="animate-spin rounded-full h-10 w-10 border-4 border-umak-blue border-t-transparent" />
+          </div>
+        ) : (
         <div className="bg-white rounded-lg shadow-lg border-l-4 border-umak-yellow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -104,7 +154,10 @@ export default function SubmissionsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 max-w-lg font-metropolis leading-relaxed">
+                      <div className="text-sm font-semibold text-gray-900 font-metropolis">
+                        {getTypeLabel(submission.type)}
+                      </div>
+                      <div className="text-xs text-gray-500 font-metropolis mt-1 max-w-lg leading-relaxed">
                         {submission.details}
                       </div>
                     </td>
@@ -121,10 +174,10 @@ export default function SubmissionsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-gray-900 font-metropolis">
-                        {new Date(submission.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {format(new Date(submission.createdAt), 'MMM d, yyyy')}
                       </div>
                       <div className="text-xs text-gray-500 font-metropolis mt-1">
-                        {new Date(submission.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                        {format(new Date(submission.createdAt), 'hh:mm a')}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -151,6 +204,7 @@ export default function SubmissionsPage() {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   )

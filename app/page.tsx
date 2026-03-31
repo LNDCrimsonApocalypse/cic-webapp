@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { CheckCircle } from 'lucide-react'
 import Header from '@/components/Header'
 import HeroSection from '@/components/landing/HeroSection'
 import ServicesSection from '@/components/landing/ServicesSection'
@@ -19,7 +20,9 @@ export default function HomePage() {
     isSubmitting,
     handleTypeSelect,
     handleInputChange,
-    handleSubmit
+    handleSubmit,
+    successMessage,
+    clearSuccessMessage
   } = useRequestForm()
 
   useEffect(() => {
@@ -53,40 +56,68 @@ export default function HomePage() {
         <Header isLandingPage={false} />
         <main id="services-form" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
           <div className="max-w-5xl mx-auto">
-            <div className="bg-white rounded-lg shadow-lg border-t-4 border-umak-yellow p-6 sm:p-8 lg:p-12">
-              <div className="flex flex-col sm:flex-row items-start justify-between mb-8 sm:mb-10 pb-6 sm:pb-8 border-b-2 border-gray-100 gap-4">
-                <div className="flex-1">
-                  <div className="text-xs font-metropolis font-semibold text-gray-500 uppercase tracking-widest mb-2 sm:mb-3">
-                    Request Form
-                  </div>
-                  <h2 className="text-3xl sm:text-4xl lg:text-5xl font-marcellus text-umak-blue mb-3 sm:mb-4 leading-snug">
-                    {REQUEST_TYPES.find(t => t.id === selectedType)?.label}
-                  </h2>
-                  <p className="text-gray-600 font-metropolis text-sm sm:text-base font-normal">
-                    Complete all required fields to submit your request
-                  </p>
+            {successMessage ? (
+              <div className="bg-white rounded-lg shadow-lg border-t-4 border-green-500 p-6 sm:p-8 lg:p-12 text-center font-metropolis">
+                <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-6" />
+                <h2 className="text-2xl sm:text-3xl font-marcellus text-umak-blue mb-4">
+                  Request Submitted
+                </h2>
+                <p className="text-gray-600 font-metropolis text-sm sm:text-base mb-8">
+                  {successMessage}
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <button
+                    onClick={() => {
+                      clearSuccessMessage()
+                    }}
+                    className="px-6 py-3 bg-umak-blue text-white rounded-lg font-metropolis font-semibold text-sm uppercase tracking-wider hover:bg-blue-900 transition-colors"
+                  >
+                    Submit Another Request
+                  </button>
+                  <button
+                    onClick={handleFormCancel}
+                    className="px-6 py-3 border-2 border-gray-300 text-gray-600 rounded-lg font-metropolis font-semibold text-sm uppercase tracking-wider hover:border-umak-blue hover:text-umak-blue transition-colors"
+                  >
+                    Back to Home
+                  </button>
                 </div>
-                <button
-                  onClick={handleFormCancel}
-                  className="text-gray-500 hover:text-umak-blue font-metropolis font-semibold text-xs uppercase tracking-wider flex items-center transition-colors whitespace-nowrap"
-                >
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  <span className="hidden sm:inline">Back to Home</span>
-                  <span className="sm:hidden">Back</span>
-                </button>
               </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow-lg border-t-4 border-umak-yellow p-6 sm:p-8 lg:p-12">
+                <div className="flex flex-col sm:flex-row items-start justify-between mb-8 sm:mb-10 pb-6 sm:pb-8 border-b-2 border-gray-100 gap-4">
+                  <div className="flex-1">
+                    <div className="text-xs font-metropolis font-semibold text-gray-500 uppercase tracking-widest mb-2 sm:mb-3">
+                      Request Form
+                    </div>
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-marcellus text-umak-blue mb-3 sm:mb-4 leading-snug">
+                      {REQUEST_TYPES.find(t => t.id === selectedType)?.label}
+                    </h2>
+                    <p className="text-gray-600 font-metropolis text-sm sm:text-base font-normal">
+                      Complete all required fields to submit your request
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleFormCancel}
+                    className="text-gray-500 hover:text-umak-blue font-metropolis font-semibold text-xs uppercase tracking-wider flex items-center transition-colors whitespace-nowrap"
+                  >
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span className="hidden sm:inline">Back to Home</span>
+                    <span className="sm:hidden">Back</span>
+                  </button>
+                </div>
 
-              <RequestForm
-                formData={formData}
-                errors={errors}
-                isSubmitting={isSubmitting}
-                onInputChange={handleInputChange}
-                onSubmit={handleSubmit}
-                onCancel={handleFormCancel}
-              />
-            </div>
+                <RequestForm
+                  formData={formData}
+                  errors={errors}
+                  isSubmitting={isSubmitting}
+                  onInputChange={handleInputChange}
+                  onSubmit={handleSubmit}
+                  onCancel={handleFormCancel}
+                />
+              </div>
+            )}
           </div>
         </main>
       </div>

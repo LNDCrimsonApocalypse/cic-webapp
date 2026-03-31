@@ -1,18 +1,58 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import DashboardHeader from '@/components/dashboard/DashboardHeader'
 import StatCard from '@/components/dashboard/StatCard'
 import PriorityBadge from '@/components/dashboard/PriorityBadge'
 import StatusBadge from '@/components/dashboard/StatusBadge'
-import { mockSubmissions } from '@/lib/mockData'
+import { supabaseClient } from '@/lib/supabase'
+import { mockSubmissions, Submission } from '@/lib/mockData'
 import { Filter, Calendar } from 'lucide-react'
 
 export default function DashboardPage() {
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [loading, setLoading] = useState(true)
   const [selectedType, setSelectedType] = useState<string>('all')
   const [selectedMonth, setSelectedMonth] = useState<string>('all')
   const [selectedYear, setSelectedYear] = useState<string>('all')
   const [showFilters, setShowFilters] = useState(false)
+
+  useEffect(() => {
+    async function fetchSubmissions() {
+      if (!supabaseClient) {
+        setSubmissions(mockSubmissions)
+        setLoading(false)
+        return
+      }
+      const { data, error } = await supabaseClient
+        .from('submissions')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (data) {
+        setSubmissions(
+          data.map((row: any) => ({
+            id: row.id,
+            name: row.name,
+            email: row.email,
+            phone: row.phone ?? undefined,
+            details: row.details,
+            type: row.type,
+            priority: row.priority,
+            status: row.status,
+            assignee: row.assignee ?? undefined,
+            createdAt: new Date(row.created_at),
+            updatedAt: row.updated_at ? new Date(row.updated_at) : new Date(row.created_at),
+          }))
+        )
+      }
+      if (error) {
+        console.error('Failed to fetch submissions:', error)
+        setSubmissions(mockSubmissions)
+      }
+      setLoading(false)
+    }
+    fetchSubmissions()
+  }, [])
 
   // Service types mapping
   const serviceTypes = {
@@ -27,9 +67,9 @@ export default function DashboardPage() {
 
   // Get unique years and months from submissions
   const availableYears = useMemo(() => {
-    const years = new Set(mockSubmissions.map(s => new Date(s.createdAt).getFullYear()))
+    const years = new Set(submissions.map(s => new Date(s.createdAt).getFullYear()))
     return Array.from(years).sort((a, b) => b - a)
-  }, [])
+  }, [submissions])
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -38,7 +78,7 @@ export default function DashboardPage() {
 
   // Filter submissions
   const filteredSubmissions = useMemo(() => {
-    return mockSubmissions.filter(submission => {
+    return submissions.filter(submission => {
       const submissionDate = new Date(submission.createdAt)
       const submissionMonth = submissionDate.getMonth()
       const submissionYear = submissionDate.getFullYear()
@@ -49,7 +89,7 @@ export default function DashboardPage() {
 
       return typeMatch && monthMatch && yearMatch
     })
-  }, [selectedType, selectedMonth, selectedYear])
+  }, [submissions, selectedType, selectedMonth, selectedYear])
 
   const totalSubmissions = filteredSubmissions.length
   const pendingSubmissions = filteredSubmissions.filter(s => s.status === 'Pending').length
@@ -88,32 +128,38 @@ export default function DashboardPage() {
       
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            title="Total Requests"
-            value={totalSubmissions}
-            color="bg-umak-blue"
-            subtitle="All submissions"
-          />
-          <StatCard
-            title="Pending Review"
-            value={pendingSubmissions}
-            color="bg-orange-500"
-            subtitle="Needs attention"
-          />
-          <StatCard
-            title="In Progress"
-            value={inProgressSubmissions}
-            color="bg-blue-600"
-            subtitle="Currently working"
-          />
-          <StatCard
-            title="Completed"
-            value={completedSubmissions}
-            color="bg-green-600"
-            subtitle="Successfully done"
-          />
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-10 w-10 border-4 border-umak-blue border-t-transparent" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard
+              title="Total Requests"
+              value={totalSubmissions}
+              color="bg-umak-blue"
+              subtitle="All submissions"
+            />
+            <StatCard
+              title="Pending Review"
+              value={pendingSubmissions}
+              color="bg-orange-500"
+              subtitle="Needs attention"
+            />
+            <StatCard
+              title="In Progress"
+              value={inProgressSubmissions}
+              color="bg-blue-600"
+              subtitle="Currently working"
+            />
+            <StatCard
+              title="Completed"
+              value={completedSubmissions}
+              color="bg-green-600"
+              subtitle="Successfully done"
+            />
+          </div>
+        )}
 
         {/* Filters Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

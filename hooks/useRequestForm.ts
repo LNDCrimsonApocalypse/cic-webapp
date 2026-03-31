@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { FormData, FormErrors } from '@/lib/types'
 import { requestFormSchema } from '@/lib/validation'
 import { INITIAL_FORM_DATA } from '@/lib/constants'
+import { supabaseClient } from '@/lib/supabase'
 
 export function useRequestForm() {
   const [step, setStep] = useState(1)
@@ -12,6 +13,7 @@ export function useRequestForm() {
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA)
   const [errors, setErrors] = useState<FormErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
 
   const validateField = (name: keyof FormData, value: string): void => {
     try {
@@ -51,16 +53,36 @@ export function useRequestForm() {
     e.preventDefault()
     setIsSubmitting(true)
     setErrors({})
+    setSuccessMessage('')
 
     try {
       // Validate entire form
       const validatedData = requestFormSchema.parse(formData)
-      
-      // TODO: Replace with actual API call
-      // Example: await submitRequest(validatedData, selectedType)
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      alert('Request submitted successfully! Our team will review and contact you within 24-48 hours.')
+
+      if (supabaseClient) {
+        const { error: submitError } = await supabaseClient
+          .from('submissions')
+          .insert({
+            name: validatedData.name,
+            email: validatedData.email,
+            phone: validatedData.phone,
+            department: validatedData.department,
+            type: selectedType,
+            details: validatedData.requestDetails,
+            deadline: validatedData.deadline,
+            priority: validatedData.priority,
+            status: 'Pending',
+            user_id: null,
+          })
+
+        if (submitError) throw submitError
+      } else {
+        // Fallback when Supabase is not configured
+        await new Promise(resolve => setTimeout(resolve, 1500))
+        alert('Request submitted successfully! Our team will review and contact you within 24-48 hours.')
+      }
+
+      setSuccessMessage('Request submitted successfully! Our team will review and contact you within 24-48 hours.')
       resetForm()
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -86,6 +108,8 @@ export function useRequestForm() {
     handleTypeSelect,
     handleInputChange,
     handleCancel,
-    handleSubmit
+    handleSubmit,
+    successMessage,
+    clearSuccessMessage: () => setSuccessMessage('')
   }
 }

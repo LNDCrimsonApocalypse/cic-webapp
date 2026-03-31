@@ -9,6 +9,11 @@ export async function middleware(req: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   )
   
+  const isCallbackRoute = req.nextUrl.pathname.startsWith('/auth/callback')
+  if (isCallbackRoute) {
+    return NextResponse.next()
+  }
+
   const isDashboardPage = req.nextUrl.pathname.startsWith('/dashboard')
   
   // If Supabase is not configured and trying to access dashboard, redirect to login
@@ -62,5 +67,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/admin']
+  matcher: ['/dashboard/:path*', '/login', '/admin', '/auth/callback']
 }
