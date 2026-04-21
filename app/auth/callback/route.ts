@@ -7,12 +7,18 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get('code')
 
   if (code) {
-    const cookieStore = await cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = createRouteHandlerClient({ cookies })
 
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.user) {
+      // Restrict to UMak emails only
+      if (!data.user.email?.endsWith('@umak.edu.ph')) {
+        await supabase.auth.signOut()
+        return NextResponse.redirect(
+          new URL('/login?error=Only+UMak+email+addresses+(@umak.edu.ph)+are+allowed', requestUrl.origin)
+        )
+      }
       // Check if profile exists, if not create one
       const { data: existingProfile } = await supabase
         .from('profiles')
