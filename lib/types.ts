@@ -11,14 +11,30 @@ export interface RequestType {
   bgColor: string
 }
 
+export type CorporateRequisiteType =
+  | 'Medals'
+  | 'Plaques'
+  | 'Standardized Corporate Giveaways'
+  | 'Trophies'
+
 export interface FormData {
+  // Requestor info (all services)
   name: string
   email: string
   phone: string
-  department: string
+  department: string // stores the selected Office / College / Institute
+
+  // Generic request fields (used by services without a custom form)
   requestDetails: string
   deadline: string
   priority: 'Low' | 'Medium' | 'High'
+
+  // Corporate Requisites fields (only filled when that service is selected)
+  corporateRequisiteType?: CorporateRequisiteType | ''
+  eventName?: string
+  eventDate?: string
+  quantity?: string
+  draftCitation?: string
 }
 
 export type FormErrors = Partial<Record<keyof FormData, string>>

@@ -3,8 +3,16 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
-import { Inbox, Plus } from 'lucide-react'
-import { REQUEST_TYPES } from '@/lib/constants'
+import {
+  Inbox,
+  Plus,
+  Calendar,
+  ChevronRight,
+  FileText,
+  type LucideIcon,
+} from 'lucide-react'
+import { findService } from '@/lib/services'
+import { getAccent, getSubmissionTag } from '@/lib/submission-display'
 import UserStatusBadge from './UserStatusBadge'
 
 interface Submission {
@@ -20,15 +28,6 @@ interface UserRecentSubmissionsProps {
   loading?: boolean
 }
 
-function getTypeLabel(id: string) {
-  return REQUEST_TYPES.find((t) => t.id === id)?.label || id
-}
-
-function truncate(text: string, max: number) {
-  if (!text) return ''
-  return text.length > max ? `${text.slice(0, max).trim()}...` : text
-}
-
 export default function UserRecentSubmissions({
   submissions,
   loading = false,
@@ -36,8 +35,8 @@ export default function UserRecentSubmissions({
   const router = useRouter()
 
   return (
-    <section className="bg-white rounded-xl border-t-4 border-umak-yellow shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between p-6 border-b border-gray-100">
+    <section>
+      <div className="flex items-center justify-between mb-4">
         <h2 className="font-marcellus text-xl text-umak-blue">Recent Submissions</h2>
         <Link
           href="/usermyrequests"
@@ -48,21 +47,24 @@ export default function UserRecentSubmissions({
       </div>
 
       {loading ? (
-        <div className="divide-y divide-gray-100">
+        <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="p-4 sm:p-6 animate-pulse">
-              <div className="flex justify-between items-center">
-                <div className="flex-1">
-                  <div className="h-4 w-32 bg-gray-200 rounded mb-2" />
-                  <div className="h-3 w-64 bg-gray-100 rounded" />
-                </div>
-                <div className="h-6 w-20 bg-gray-200 rounded-full" />
+            <div
+              key={i}
+              className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-5 animate-pulse flex items-center gap-4"
+            >
+              <div className="w-14 h-14 rounded-xl bg-gray-100 flex-shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-40 bg-gray-200 rounded" />
+                <div className="h-3 w-64 bg-gray-100 rounded" />
+                <div className="h-3 w-48 bg-gray-100 rounded" />
               </div>
+              <div className="h-6 w-20 bg-gray-200 rounded-full" />
             </div>
           ))}
         </div>
       ) : submissions.length === 0 ? (
-        <div className="p-12 text-center">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
           <Inbox className="mx-auto text-gray-300 mb-4" size={48} />
           <p className="font-metropolis text-sm text-gray-600 mb-4">
             No submissions yet. Ready to submit your first request?
@@ -76,31 +78,58 @@ export default function UserRecentSubmissions({
           </button>
         </div>
       ) : (
-        <div className="divide-y divide-gray-100">
-          {submissions.slice(0, 5).map((sub) => (
-            <button
-              key={sub.id}
-              onClick={() => router.push('/usermyrequests')}
-              className="w-full text-left p-4 sm:p-6 hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <p className="font-marcellus text-base text-umak-blue mb-1">
-                    {getTypeLabel(sub.type)}
-                  </p>
-                  <p className="font-metropolis text-sm text-gray-600 truncate">
-                    {truncate(sub.details, 60)}
-                  </p>
-                </div>
-                <div className="flex-shrink-0 flex flex-col items-end gap-1">
-                  <UserStatusBadge status={sub.status} />
-                  <span className="font-metropolis text-xs text-gray-500">
-                    {format(new Date(sub.created_at), 'MMM d, yyyy')}
-                  </span>
+        <div className="space-y-3">
+          {submissions.slice(0, 5).map((sub) => {
+            const service = findService(sub.type)
+            const accent = getAccent(sub.type)
+            const Icon: LucideIcon = service?.icon || FileText
+            const title = service?.title || sub.type
+            const tag = getSubmissionTag(sub.type, sub.details)
+
+            return (
+              <div
+                key={sub.id}
+                onClick={() => router.push('/usermyrequests')}
+                className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer"
+                style={{ borderLeft: `4px solid ${accent.bar}` }}
+              >
+                <div className="p-4 sm:p-5 flex items-center gap-4">
+                  <div
+                    className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: accent.tileBg }}
+                    aria-hidden="true"
+                  >
+                    <Icon size={26} style={{ color: accent.tileIcon }} strokeWidth={2} />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-metropolis font-bold text-umak-blue text-base sm:text-lg mb-1 truncate">
+                      {title}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-metropolis text-gray-500">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Calendar size={13} />
+                        Submitted {format(new Date(sub.created_at), 'MMM d, yyyy')}
+                      </span>
+                      {tag && (
+                        <span
+                          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium"
+                          style={{ background: accent.tileBg, color: accent.tileIcon }}
+                        >
+                          {tag}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <UserStatusBadge status={sub.status} />
+                    <ChevronRight size={18} className="text-gray-300" />
+                  </div>
                 </div>
               </div>
-            </button>
-          ))}
+            )
+          })}
         </div>
       )}
     </section>

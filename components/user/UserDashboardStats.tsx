@@ -1,7 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Clock, Loader2, CheckCircle2, LucideIcon } from 'lucide-react'
+import { FileText, Clock, Loader2, CheckCircle2, type LucideIcon } from 'lucide-react'
 
 interface Stats {
   total: number
@@ -21,16 +22,46 @@ interface Card {
   icon: LucideIcon
   sublabel: string
   filter: string | null
+  accentColor: string
 }
 
 export default function UserDashboardStats({ stats, loading = false }: UserDashboardStatsProps) {
   const router = useRouter()
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
 
   const cards: Card[] = [
-    { label: 'My Requests', value: stats.total, icon: FileText, sublabel: 'All submissions', filter: null },
-    { label: 'Pending', value: stats.pending, icon: Clock, sublabel: 'Awaiting review', filter: 'Pending' },
-    { label: 'In Progress', value: stats.inProgress, icon: Loader2, sublabel: 'Being worked on', filter: 'In Progress' },
-    { label: 'Completed', value: stats.completed, icon: CheckCircle2, sublabel: 'Done', filter: 'Completed' },
+    {
+      label: 'My Requests',
+      value: stats.total,
+      icon: FileText,
+      sublabel: 'All submissions',
+      filter: null,
+      accentColor: '#A78BFA',
+    },
+    {
+      label: 'Pending',
+      value: stats.pending,
+      icon: Clock,
+      sublabel: 'Awaiting review',
+      filter: 'Pending',
+      accentColor: '#FB923C',
+    },
+    {
+      label: 'In Progress',
+      value: stats.inProgress,
+      icon: Loader2,
+      sublabel: 'Being worked on',
+      filter: 'In Progress',
+      accentColor: '#38BDF8',
+    },
+    {
+      label: 'Completed',
+      value: stats.completed,
+      icon: CheckCircle2,
+      sublabel: 'Done',
+      filter: 'Completed',
+      accentColor: '#4ADE80',
+    },
   ]
 
   const handleClick = (filter: string | null) => {
@@ -55,19 +86,33 @@ export default function UserDashboardStats({ stats, loading = false }: UserDashb
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map((card) => {
+      {cards.map((card, idx) => {
         const Icon = card.icon
+        const isHovered = hoveredIdx === idx
         return (
           <button
             key={card.label}
             onClick={() => handleClick(card.filter)}
-            className="group bg-umak-blue rounded-xl p-6 shadow-sm text-left hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer"
+            onMouseEnter={() => setHoveredIdx(idx)}
+            onMouseLeave={() => setHoveredIdx(null)}
+            onFocus={() => setHoveredIdx(idx)}
+            onBlur={() => setHoveredIdx(null)}
+            className="group bg-umak-blue rounded-l-none rounded-r-xl p-6 text-left hover:-translate-y-1 transition-all duration-200 cursor-pointer"
+            style={{
+              borderLeft: `8px solid ${card.accentColor}`,
+              boxShadow: isHovered
+                ? `0 18px 40px -10px ${card.accentColor}80, 0 8px 20px -8px ${card.accentColor}55`
+                : '0 1px 2px 0 rgba(0,0,0,0.08)',
+            }}
           >
-            <Icon size={28} className="text-umak-yellow mb-4" />
+            <Icon size={28} className="mb-4" style={{ color: card.accentColor }} />
             <p className="text-xs uppercase tracking-wider text-gray-300 font-metropolis mb-2">
               {card.label}
             </p>
-            <p className="text-5xl font-marcellus text-umak-yellow leading-none mb-2">
+            <p
+              className="text-5xl font-marcellus leading-none mb-2"
+              style={{ color: card.accentColor }}
+            >
               {card.value}
             </p>
             <p className="text-xs text-gray-300 font-metropolis">{card.sublabel}</p>

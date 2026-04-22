@@ -5,12 +5,20 @@ import { useRouter } from 'next/navigation'
 import { useScrollAnimation } from '@/hooks/useScrollAnimation'
 import { useAuth } from '@/contexts/AuthContext'
 import { SERVICES } from '@/lib/services'
+import BeforeProceedModal, {
+  BEFORE_PROCEED_SERVICE_TYPES,
+} from '@/components/BeforeProceedModal'
 
 export default function ServicesSection() {
   const [hoveredService, setHoveredService] = useState<string | null>(null)
+  const [modalServiceType, setModalServiceType] = useState<string | null>(null)
   const { ref, isVisible } = useScrollAnimation(80)
   const router = useRouter()
   const { user } = useAuth()
+
+  const navigateToForm = (requestType: string) => {
+    router.push(`/usersubmitrequest/${requestType}`)
+  }
 
   const handleRequestClick = (requestType?: string) => {
     if (!requestType) return
@@ -18,7 +26,22 @@ export default function ServicesSection() {
       router.push('/login')
       return
     }
-    router.push(`/usersubmitrequest/${requestType}`)
+    if (BEFORE_PROCEED_SERVICE_TYPES.has(requestType)) {
+      setModalServiceType(requestType)
+      return
+    }
+    navigateToForm(requestType)
+  }
+
+  const handleProceed = () => {
+    if (!modalServiceType) return
+    const target = modalServiceType
+    setModalServiceType(null)
+    navigateToForm(target)
+  }
+
+  const handleGoBack = () => {
+    setModalServiceType(null)
   }
 
   const getStatusBadge = (status?: string) => {
@@ -171,6 +194,12 @@ export default function ServicesSection() {
           })}
         </div>
       </div>
+
+      <BeforeProceedModal
+        serviceType={modalServiceType}
+        onProceed={handleProceed}
+        onCancel={handleGoBack}
+      />
     </section>
   )
 }

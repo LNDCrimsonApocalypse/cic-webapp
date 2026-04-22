@@ -3,10 +3,18 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { format } from 'date-fns'
-import { Search, Inbox } from 'lucide-react'
+import {
+  Search,
+  Inbox,
+  Calendar,
+  ChevronRight,
+  FileText,
+  type LucideIcon,
+} from 'lucide-react'
 import { supabaseClient } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
-import { REQUEST_TYPES } from '@/lib/constants'
+import { findService } from '@/lib/services'
+import { getAccent, getSubmissionTag } from '@/lib/submission-display'
 import UserPageHeader from '@/components/user/UserPageHeader'
 import UserStatusBadge from '@/components/user/UserStatusBadge'
 
@@ -61,8 +69,6 @@ export default function UserMyRequestsPage() {
     return true
   })
 
-  const getTypeLabel = (id: string) => REQUEST_TYPES.find((t) => t.id === id)?.label || id
-
   return (
     <div className="min-h-screen">
       <UserPageHeader title="My Requests" subtitle="View and track all your submissions." />
@@ -106,58 +112,83 @@ export default function UserMyRequestsPage() {
           </button>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          {loading ? (
-            <div className="p-12 text-center text-gray-500 font-metropolis">Loading...</div>
-          ) : filtered.length === 0 ? (
-            <div className="p-12 text-center">
-              <Inbox className="mx-auto text-gray-300 mb-4" size={48} />
-              <h3 className="font-marcellus text-xl text-gray-600 mb-2">No requests found</h3>
-              <p className="font-metropolis text-sm text-gray-500 mb-4">
-                {submissions.length === 0
-                  ? "You haven't submitted any requests yet."
-                  : 'Try adjusting your filters.'}
-              </p>
-              {submissions.length === 0 && (
-                <button
-                  onClick={() => router.push('/usersubmitrequest')}
-                  className="px-6 py-2 bg-umak-yellow text-umak-blue font-metropolis font-bold rounded-lg hover:bg-yellow-400"
-                >
-                  Submit Your First Request
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-100">
-              {filtered.map((sub) => (
+        {loading ? (
+          <div className="bg-white rounded-xl shadow-sm p-12 text-center text-gray-500 font-metropolis">
+            Loading...
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+            <Inbox className="mx-auto text-gray-300 mb-4" size={48} />
+            <h3 className="font-marcellus text-xl text-gray-600 mb-2">No requests found</h3>
+            <p className="font-metropolis text-sm text-gray-500 mb-4">
+              {submissions.length === 0
+                ? "You haven't submitted any requests yet."
+                : 'Try adjusting your filters.'}
+            </p>
+            {submissions.length === 0 && (
+              <button
+                onClick={() => router.push('/usersubmitrequest')}
+                className="px-6 py-2 bg-umak-yellow text-umak-blue font-metropolis font-bold rounded-lg hover:bg-yellow-400"
+              >
+                Submit Your First Request
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((sub) => {
+              const service = findService(sub.type)
+              const accent = getAccent(sub.type)
+              const Icon: LucideIcon = service?.icon || FileText
+              const title = service?.title || sub.type
+              const tag = getSubmissionTag(sub.type, sub.details)
+
+              return (
                 <div
                   key={sub.id}
-                  className="p-4 sm:p-6 hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => router.push(`/usermyrequests/${sub.id}`)}
+                  className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer"
+                  style={{ borderLeft: `4px solid ${accent.bar}` }}
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="p-4 sm:p-5 flex items-center gap-4">
+                    <div
+                      className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: accent.tileBg }}
+                      aria-hidden="true"
+                    >
+                      <Icon size={26} style={{ color: accent.tileIcon }} strokeWidth={2} />
+                    </div>
+
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-marcellus text-lg text-umak-blue mb-1">
-                        {getTypeLabel(sub.type)}
+                      <h3 className="font-metropolis font-bold text-umak-blue text-base sm:text-lg mb-1 truncate">
+                        {title}
                       </h3>
-                      <p className="text-sm text-gray-600 font-metropolis line-clamp-2">
-                        {sub.details}
-                      </p>
-                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 font-metropolis">
-                        <span>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-metropolis text-gray-500">
+                        <span className="inline-flex items-center gap-1.5">
+                          <Calendar size={13} />
                           Submitted {format(new Date(sub.created_at), 'MMM d, yyyy')}
                         </span>
-                        {sub.priority && <span>Priority: {sub.priority}</span>}
+                        {tag && (
+                          <span
+                            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium"
+                            style={{ background: accent.tileBg, color: accent.tileIcon }}
+                          >
+                            {tag}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <div className="flex-shrink-0">
+
+                    <div className="flex items-center gap-3 flex-shrink-0">
                       <UserStatusBadge status={sub.status} />
+                      <ChevronRight size={18} className="text-gray-300" />
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              )
+            })}
+          </div>
+        )}
 
         {!loading && filtered.length > 0 && (
           <p className="text-sm text-gray-500 font-metropolis text-center">

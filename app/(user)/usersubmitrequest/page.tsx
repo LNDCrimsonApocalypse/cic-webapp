@@ -1,18 +1,41 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SERVICES, findService } from '@/lib/services'
 import UserPageHeader from '@/components/user/UserPageHeader'
 import UserServiceTypeCard from '@/components/user/UserServiceTypeCard'
+import BeforeProceedModal, {
+  BEFORE_PROCEED_SERVICE_TYPES,
+} from '@/components/BeforeProceedModal'
 
 export default function UserSubmitRequestPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const handledRef = useRef(false)
+  const [modalServiceType, setModalServiceType] = useState<string | null>(null)
+
+  const navigateToForm = (serviceType: string) => {
+    router.push(`/usersubmitrequest/${serviceType}`)
+  }
 
   const handleSelect = (serviceType: string) => {
-    router.push(`/usersubmitrequest/${serviceType}`)
+    if (BEFORE_PROCEED_SERVICE_TYPES.has(serviceType)) {
+      setModalServiceType(serviceType)
+      return
+    }
+    navigateToForm(serviceType)
+  }
+
+  const handleProceed = () => {
+    if (!modalServiceType) return
+    const target = modalServiceType
+    setModalServiceType(null)
+    navigateToForm(target)
+  }
+
+  const handleGoBack = () => {
+    setModalServiceType(null)
   }
 
   useEffect(() => {
@@ -43,6 +66,12 @@ export default function UserSubmitRequestPage() {
           ))}
         </div>
       </div>
+
+      <BeforeProceedModal
+        serviceType={modalServiceType}
+        onProceed={handleProceed}
+        onCancel={handleGoBack}
+      />
     </div>
   )
 }

@@ -1,13 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { FormData, FormErrors } from '@/lib/types'
-import { requestFormSchema } from '@/lib/validation'
+import {
+  requestFormSchema,
+  corporateRequisitesSchema,
+} from '@/lib/validation'
 import { INITIAL_FORM_DATA } from '@/lib/constants'
 import { supabaseClient } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
+import { getDisplayName } from '@/lib/get-display-name'
 
 export function useRequestForm() {
+  const { user, profile } = useAuth()
   const [step, setStep] = useState(1)
   const [selectedType, setSelectedType] = useState('')
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA)
@@ -15,13 +21,35 @@ export function useRequestForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
 
+  // Auto-populate name + email from the logged-in user once auth resolves.
+  useEffect(() => {
+    if (!user) return
+    const displayName = getDisplayName(user, profile)
+    setFormData((prev) => ({
+      ...prev,
+      name: prev.name || displayName,
+      email: prev.email || user.email || '',
+    }))
+  }, [user, profile])
+
+  const getSchemaForType = (typeId: string) => {
+    if (typeId === 'design') return corporateRequisitesSchema
+    return requestFormSchema
+  }
+
   const validateField = (name: keyof FormData, value: string): void => {
+    const schema = getSchemaForType(selectedType)
+    const fieldSchema = (schema.shape as Record<string, z.ZodType | undefined>)[name]
+    if (!fieldSchema) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }))
+      return
+    }
     try {
-      requestFormSchema.shape[name].parse(value)
-      setErrors(prev => ({ ...prev, [name]: undefined }))
+      fieldSchema.parse(value)
+      setErrors((prev) => ({ ...prev, [name]: undefined }))
     } catch (error) {
       if (error instanceof z.ZodError) {
-        setErrors(prev => ({ ...prev, [name]: error.issues[0].message }))
+        setErrors((prev) => ({ ...prev, [name]: error.issues[0].message }))
       }
     }
   }
@@ -32,7 +60,7 @@ export function useRequestForm() {
   }
 
   const handleInputChange = (name: keyof FormData, value: string): void => {
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
     validateField(name, value)
   }
 
@@ -45,8 +73,49 @@ export function useRequestForm() {
   const resetForm = (): void => {
     setStep(1)
     setSelectedType('')
-    setFormData(INITIAL_FORM_DATA)
+    setFormData({
+      ...INITIAL_FORM_DATA,
+      name: user ? getDisplayName(user, profile) : '',
+      email: user?.email || '',
+    })
     setErrors({})
+  }
+
+  // Build the Supabase row payload based on selected service type.
+  const buildSubmissionPayload = (validated: Record<string, unknown>) => {
+    const base = {
+      name: validated.name,
+      email: validated.email,
+      phone: validated.phone,
+      department: validated.department,
+      type: selectedType,
+      status: 'Pending',
+      user_id: user?.id ?? null,
+    }
+
+    if (selectedType === 'design') {
+      return {
+        ...base,
+        // Stash the service-specific fields in `details` as a structured blob
+        // so we don't need a schema migration. Admin view can parse as JSON.
+        details: JSON.stringify({
+          corporateRequisiteType: validated.corporateRequisiteType,
+          eventName: validated.eventName,
+          eventDate: validated.eventDate,
+          quantity: validated.quantity,
+          draftCitation: validated.draftCitation,
+        }),
+        deadline: validated.eventDate,
+        priority: 'Medium',
+      }
+    }
+
+    return {
+      ...base,
+      details: validated.requestDetails,
+      deadline: validated.deadline,
+      priority: validated.priority,
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
@@ -56,33 +125,22 @@ export function useRequestForm() {
     setSuccessMessage('')
 
     try {
-      // Validate entire form
-      const validatedData = requestFormSchema.parse(formData)
+      const schema = getSchemaForType(selectedType)
+      const validatedData = schema.parse(formData) as Record<string, unknown>
 
       if (supabaseClient) {
         const { error: submitError } = await supabaseClient
           .from('submissions')
-          .insert({
-            name: validatedData.name,
-            email: validatedData.email,
-            phone: validatedData.phone,
-            department: validatedData.department,
-            type: selectedType,
-            details: validatedData.requestDetails,
-            deadline: validatedData.deadline,
-            priority: validatedData.priority,
-            status: 'Pending',
-            user_id: null,
-          })
+          .insert(buildSubmissionPayload(validatedData))
 
         if (submitError) throw submitError
       } else {
-        // Fallback when Supabase is not configured
-        await new Promise(resolve => setTimeout(resolve, 1500))
-        alert('Request submitted successfully! Our team will review and contact you within 24-48 hours.')
+        await new Promise((resolve) => setTimeout(resolve, 1500))
       }
 
-      setSuccessMessage('Request submitted successfully! Our team will review and contact you within 24-48 hours.')
+      setSuccessMessage(
+        'Request submitted successfully! Our team will review and contact you within 24-48 hours.',
+      )
       resetForm()
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -110,6 +168,6 @@ export function useRequestForm() {
     handleCancel,
     handleSubmit,
     successMessage,
-    clearSuccessMessage: () => setSuccessMessage('')
+    clearSuccessMessage: () => setSuccessMessage(''),
   }
 }
