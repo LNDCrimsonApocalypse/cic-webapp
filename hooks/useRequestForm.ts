@@ -20,6 +20,7 @@ export function useRequestForm() {
   const [errors, setErrors] = useState<FormErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const [submissionError, setSubmissionError] = useState('')
 
   // Auto-populate name + email from the logged-in user once auth resolves.
   useEffect(() => {
@@ -123,17 +124,31 @@ export function useRequestForm() {
     setIsSubmitting(true)
     setErrors({})
     setSuccessMessage('')
+    setSubmissionError('')
 
     try {
       const schema = getSchemaForType(selectedType)
       const validatedData = schema.parse(formData) as Record<string, unknown>
 
+      // Guard: we need an authenticated user to stamp user_id on the row so the
+      // dashboards (which filter by user_id) can show it back to them. If the
+      // session isn't loaded yet, fail loudly instead of writing a null user_id.
+      if (!user?.id) {
+        throw new Error(
+          'You are not signed in. Please refresh the page and try again.',
+        )
+      }
+
       if (supabaseClient) {
-        const { error: submitError } = await supabaseClient
+        const payload = buildSubmissionPayload(validatedData)
+        const { data, error: submitError } = await supabaseClient
           .from('submissions')
-          .insert(buildSubmissionPayload(validatedData))
+          .insert(payload)
+          .select()
 
         if (submitError) throw submitError
+        // eslint-disable-next-line no-console
+        console.log('[useRequestForm] submission inserted:', data)
       } else {
         await new Promise((resolve) => setTimeout(resolve, 1500))
       }
@@ -151,6 +166,16 @@ export function useRequestForm() {
           }
         })
         setErrors(fieldErrors)
+      } else {
+        // eslint-disable-next-line no-console
+        console.error('[useRequestForm] submission failed:', error)
+        const message =
+          error instanceof Error
+            ? error.message
+            : typeof error === 'object' && error && 'message' in error
+              ? String((error as { message: unknown }).message)
+              : 'Submission failed. Please try again.'
+        setSubmissionError(message)
       }
     } finally {
       setIsSubmitting(false)
@@ -168,6 +193,8 @@ export function useRequestForm() {
     handleCancel,
     handleSubmit,
     successMessage,
+    submissionError,
+    clearSubmissionError: () => setSubmissionError(''),
     clearSuccessMessage: () => setSuccessMessage(''),
   }
 }

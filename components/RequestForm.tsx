@@ -12,6 +12,7 @@ interface RequestFormProps {
   formData: FormData
   errors: FormErrors
   isSubmitting: boolean
+  submissionError?: string
   onInputChange: (name: keyof FormData, value: string) => void
   onSubmit: (e: React.FormEvent) => void
   onCancel: () => void
@@ -57,6 +58,7 @@ export default function RequestForm({
   formData,
   errors,
   isSubmitting,
+  submissionError,
   onInputChange,
   onSubmit,
   onCancel,
@@ -78,6 +80,12 @@ export default function RequestForm({
     onSubmit(syntheticEvent)
     setShowConfirm(false)
   }
+
+  // If the parent surfaces a submissionError while the confirm modal is still
+  // open (submit failed), close the modal so the error banner is visible.
+  React.useEffect(() => {
+    if (submissionError) setShowConfirm(false)
+  }, [submissionError])
 
   return (
     <>
@@ -297,6 +305,16 @@ export default function RequestForm({
             </div>
           )}
         </SectionCard>
+
+        {submissionError && (
+          <div className="mb-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm font-metropolis text-red-700">
+            <span aria-hidden="true" className="text-red-500">⚠</span>
+            <div>
+              <p className="font-semibold">We couldn&apos;t submit your request.</p>
+              <p className="mt-0.5 text-red-600">{submissionError}</p>
+            </div>
+          </div>
+        )}
 
         {/* Action bar */}
         <div className="flex items-center justify-between bg-white border border-gray-200 rounded-2xl px-6 py-5 mt-2">

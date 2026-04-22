@@ -25,6 +25,7 @@ export default function SubmitRequestFormPage({
     handleInputChange,
     handleSubmit,
     successMessage,
+    submissionError,
   } = useRequestForm()
 
   useEffect(() => {
@@ -69,6 +70,7 @@ export default function SubmitRequestFormPage({
           formData={formData}
           errors={errors}
           isSubmitting={isSubmitting}
+          submissionError={submissionError}
           onInputChange={handleInputChange}
           onSubmit={handleSubmit}
           onCancel={() => router.push('/usersubmitrequest')}
