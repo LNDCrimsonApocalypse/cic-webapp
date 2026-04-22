@@ -1,4 +1,4 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
@@ -7,7 +7,28 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get('code')
 
   if (code) {
-    const supabase = createRouteHandlerClient({ cookies })
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options),
+              )
+            } catch {
+              // Called from a context where setting cookies is not allowed;
+              // safe to ignore when middleware refreshes sessions.
+            }
+          },
+        },
+      },
+    )
 
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
@@ -16,9 +37,13 @@ export async function GET(request: Request) {
       if (!data.user.email?.endsWith('@umak.edu.ph')) {
         await supabase.auth.signOut()
         return NextResponse.redirect(
-          new URL('/login?error=Only+UMak+email+addresses+(@umak.edu.ph)+are+allowed', requestUrl.origin)
+          new URL(
+            '/login?error=Only+UMak+email+addresses+(@umak.edu.ph)+are+allowed',
+            requestUrl.origin,
+          ),
         )
       }
+
       // Check if profile exists, if not create one
       const { data: existingProfile } = await supabase
         .from('profiles')
@@ -27,15 +52,14 @@ export async function GET(request: Request) {
         .single()
 
       if (!existingProfile) {
-        // Extract username from email (e.g. jdiaz from jdiaz.a12240995@umak.edu)
         const email = data.user.email || ''
-        const emailPrefix = email.split('@')[0] // e.g. "jdiaz.a12240995"
-        const username = emailPrefix.split('.')[0] // e.g. "jdiaz"
+        const emailPrefix = email.split('@')[0]
+        const username = emailPrefix.split('.')[0]
 
-        // Capitalize first letter
-        const displayName = data.user.user_metadata?.full_name
-          || data.user.user_metadata?.name
-          || username.charAt(0).toUpperCase() + username.slice(1)
+        const displayName =
+          data.user.user_metadata?.full_name ||
+          data.user.user_metadata?.name ||
+          username.charAt(0).toUpperCase() + username.slice(1)
 
         await supabase.from('profiles').insert({
           id: data.user.id,
@@ -52,7 +76,7 @@ export async function GET(request: Request) {
         .eq('id', data.user.id)
         .single()
 
-      const redirectPath = profile?.role === 'admin' ? '/dashboard' : '/'
+      const redirectPath = profile?.role === 'admin' ? '/dashboard' : '/userpage'
       return NextResponse.redirect(new URL(redirectPath, requestUrl.origin))
     }
   }
