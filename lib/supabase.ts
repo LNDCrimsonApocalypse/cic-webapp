@@ -1,4 +1,4 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createBrowserClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 
 // Check if Supabase is configured
@@ -7,9 +7,11 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey)
 
-// For client components - only create if configured
-export const supabaseClient = isSupabaseConfigured 
-  ? createClientComponentClient()
+// For client components - only create if configured.
+// Using @supabase/ssr's createBrowserClient so that the cookie format
+// matches what the /auth/callback route handler writes (also @supabase/ssr).
+export const supabaseClient = isSupabaseConfigured
+  ? createBrowserClient(supabaseUrl!, supabaseAnonKey!)
   : null
 
 // For server-side operations
