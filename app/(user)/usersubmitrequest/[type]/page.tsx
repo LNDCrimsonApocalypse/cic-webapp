@@ -21,8 +21,12 @@ export default function SubmitRequestFormPage({
     formData,
     errors,
     isSubmitting,
+    attachedFiles,
+    addAttachedFiles,
+    removeAttachedFile,
     handleTypeSelect,
     handleInputChange,
+    handleToggleSocialMediaType,
     handleSubmit,
     successMessage,
     submissionError,
@@ -44,7 +48,7 @@ export default function SubmitRequestFormPage({
   return (
     <div className="min-h-screen bg-[#F0F3F8]">
       <UserPageHeader title="Submit a New Request" hideBottomBorder />
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="px-6 py-8">
         <button
           onClick={() => router.push('/usersubmitrequest')}
           className="inline-flex items-center gap-2 mb-6 px-3 py-2 rounded-lg text-sm font-metropolis font-semibold text-umak-blue bg-white border border-gray-200 hover:bg-umak-blue hover:text-white hover:border-umak-blue transition-colors shadow-sm"
@@ -71,7 +75,11 @@ export default function SubmitRequestFormPage({
           errors={errors}
           isSubmitting={isSubmitting}
           submissionError={submissionError}
+          attachedFiles={attachedFiles}
           onInputChange={handleInputChange}
+          onToggleSocialMediaType={handleToggleSocialMediaType}
+          onAddAttachedFiles={addAttachedFiles}
+          onRemoveAttachedFile={removeAttachedFile}
           onSubmit={handleSubmit}
           onCancel={() => router.push('/usersubmitrequest')}
         />

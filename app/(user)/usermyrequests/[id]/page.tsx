@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { format, addBusinessDays } from 'date-fns'
+import { ArrowLeft } from 'lucide-react'
 import { supabaseClient } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { REQUEST_TYPES } from '@/lib/constants'
@@ -72,11 +73,42 @@ export default function RequestDetailPage() {
   const getTypeLabel = (typeId: string) =>
     REQUEST_TYPES.find((t) => t.id === typeId)?.label || typeId
 
+  interface ParsedDetails {
+    // Corporate Requisites
+    corporateRequisiteType?: string
+    eventName?: string
+    eventDate?: string
+    quantity?: string
+    draftCitation?: string
+    // Social Media
+    socialMediaTypes?: string[]
+    keyInformation?: string
+    postingDate?: string
+    postingTime?: string
+    attachments?: string[]
+  }
+
   // Parse details safely
-  let parsedDetails: Record<string, string> = {}
+  let parsedDetails: ParsedDetails = {}
   try {
-    parsedDetails = JSON.parse(submission.details)
+    parsedDetails = JSON.parse(submission.details) as ParsedDetails
   } catch {}
+
+  // Extract a human-readable filename from a Supabase public URL.
+  const filenameFromUrl = (url: string): string => {
+    try {
+      const pathname = new URL(url).pathname
+      const last = pathname.split('/').filter(Boolean).pop() || 'attachment'
+      const decoded = decodeURIComponent(last)
+      // Strip the "<timestamp>-" prefix we add on upload.
+      return decoded.replace(/^\d+-/, '')
+    } catch {
+      return url
+    }
+  }
+
+  const isSocialMedia = submission.type === 'social-media'
+  const attachments = parsedDetails.attachments ?? []
 
   // Progress tracker — 4 steps. The DB stores 'Pending', 'In Progress', 'Completed';
   // 'Submitted' is inferred (always done once the record exists).
@@ -128,13 +160,14 @@ export default function RequestDetailPage() {
         subtitle="View your submission and track its progress."
       />
 
-      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-5">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-5">
         {/* BACK LINK */}
         <button
           onClick={() => router.push('/usermyrequests')}
-          className="text-sm text-gray-500 hover:text-umak-blue font-metropolis flex items-center gap-1 transition-colors"
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-metropolis font-semibold text-umak-blue bg-white border border-gray-200 hover:bg-umak-blue hover:text-white hover:border-umak-blue transition-colors shadow-sm"
         >
-          ← Back to My Requests
+          <ArrowLeft size={16} />
+          Back to My Requests
         </button>
 
         {/* ① HEADER CARD */}
@@ -164,13 +197,16 @@ export default function RequestDetailPage() {
         </div>
 
         {/* ② PROGRESS TRACKER */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8">
-          <p className="text-xs font-bold text-umak-blue uppercase tracking-widest font-metropolis mb-6 flex items-center gap-2">
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 bg-umak-yellow/20 border-b border-gray-200 flex items-center gap-2">
             <span className="block w-1 h-4 bg-umak-blue rounded-full"></span>
-            Request Progress
-          </p>
+            <span className="text-xs font-bold text-umak-blue uppercase tracking-widest font-metropolis">
+              Request Progress
+            </span>
+          </div>
 
-          <div className="flex flex-col">
+          <div className="p-6 sm:p-8">
+            <div className="flex flex-col">
             {steps.map((step, index) => {
               const state = getStepState(index)
               const isLast = index === steps.length - 1
@@ -254,23 +290,24 @@ export default function RequestDetailPage() {
             })}
           </div>
 
-          {/* ETA Banner */}
-          {submission.status !== 'Completed' && (
-            <div className="mt-5 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800 font-metropolis">
-              🕐{' '}
-              <span>
-                Estimated completion: <strong>3–5 working days</strong> from submission ·{' '}
-                {format(submittedDate, 'MMM d')} → ~{format(estimatedDate, 'MMM d, yyyy')}
-              </span>
-            </div>
-          )}
+            {/* ETA Banner */}
+            {submission.status !== 'Completed' && (
+              <div className="mt-5 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800 font-metropolis">
+                🕐{' '}
+                <span>
+                  Estimated completion: <strong>3–5 working days</strong> from submission ·{' '}
+                  {format(submittedDate, 'MMM d')} → ~{format(estimatedDate, 'MMM d, yyyy')}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ③ TWO COLUMN: REQUEST DETAILS + REQUESTOR INFORMATION */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
           {/* Request Details */}
           <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden flex flex-col">
-            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
+            <div className="px-6 py-4 bg-umak-yellow/20 border-b border-gray-200 flex items-center gap-2">
               <span className="block w-1 h-4 bg-umak-blue rounded-full"></span>
               <span className="text-xs font-bold text-umak-blue uppercase tracking-widest font-metropolis">
                 Request Details
@@ -304,6 +341,42 @@ export default function RequestDetailPage() {
                     value={parsedDetails.quantity ? `${parsedDetails.quantity} pieces` : undefined}
                   />
                 </>
+              ) : isSocialMedia ? (
+                <>
+                  <DetailRow label="Service Type" value={getTypeLabel(submission.type)} />
+
+                  {parsedDetails.socialMediaTypes &&
+                    parsedDetails.socialMediaTypes.length > 0 && (
+                      <div>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-widest font-metropolis">
+                          Type of Social Media Request
+                        </p>
+                        <div className="mt-1.5 flex flex-wrap gap-2">
+                          {parsedDetails.socialMediaTypes.map((type) => (
+                            <span
+                              key={type}
+                              className="inline-flex items-center px-3 py-1 rounded-full bg-pink-100 text-pink-800 text-xs font-medium font-metropolis"
+                            >
+                              {type}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  <DetailRow
+                    label="Date of Posting"
+                    value={
+                      parsedDetails.postingDate
+                        ? format(new Date(parsedDetails.postingDate), 'MMMM d, yyyy')
+                        : undefined
+                    }
+                  />
+                  <DetailRow
+                    label="Time of Posting"
+                    value={parsedDetails.postingTime}
+                  />
+                </>
               ) : (
                 <>
                   <DetailRow label="Service Type" value={getTypeLabel(submission.type)} />
@@ -322,7 +395,7 @@ export default function RequestDetailPage() {
 
           {/* Requestor Information */}
           <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden flex flex-col">
-            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
+            <div className="px-6 py-4 bg-umak-yellow/20 border-b border-gray-200 flex items-center gap-2">
               <span className="block w-1 h-4 bg-umak-blue rounded-full"></span>
               <span className="text-xs font-bold text-umak-blue uppercase tracking-widest font-metropolis">
                 Requestor Information
@@ -361,6 +434,78 @@ export default function RequestDetailPage() {
               </div>
             </div>
           )}
+
+        {/* Key Information — full width for Social Media submissions */}
+        {isSocialMedia && parsedDetails.keyInformation && (
+          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 bg-umak-yellow/20 border-b border-gray-200 flex items-center gap-2">
+              <span className="block w-1 h-4 bg-umak-blue rounded-full"></span>
+              <span className="text-xs font-bold text-umak-blue uppercase tracking-widest font-metropolis">
+                Key Information for Post Content
+              </span>
+            </div>
+            <div className="p-6">
+              <div className="bg-gray-50 border border-gray-100 rounded-lg p-5">
+                <p className="text-gray-700 text-sm font-metropolis leading-relaxed whitespace-pre-wrap">
+                  {parsedDetails.keyInformation}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Attachments — always rendered for Social Media submissions */}
+        {isSocialMedia && (
+          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 bg-umak-yellow/20 border-b border-gray-200 flex items-center gap-2">
+              <span className="block w-1 h-4 bg-umak-blue rounded-full"></span>
+              <span className="text-xs font-bold text-umak-blue uppercase tracking-widest font-metropolis">
+                Attachments{attachments.length > 0 ? ` (${attachments.length})` : ''}
+              </span>
+            </div>
+            <div className="p-6">
+              {attachments.length === 0 ? (
+                <div className="bg-gray-50 border border-dashed border-gray-200 rounded-lg px-5 py-6 text-center">
+                  <p className="text-sm text-gray-500 font-metropolis">
+                    No files were attached to this request.
+                  </p>
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {attachments.map((url, i) => {
+                    const name = filenameFromUrl(url)
+                    const isImage = /\.(png|jpe?g|gif|webp)$/i.test(name)
+                    return (
+                      <li key={`${url}-${i}`}>
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between gap-3 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 hover:border-umak-blue hover:bg-blue-50/50 transition-colors group"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <span
+                              aria-hidden="true"
+                              className="w-9 h-9 rounded-lg bg-umak-blue/10 flex items-center justify-center flex-shrink-0 text-umak-blue text-xs font-bold font-metropolis"
+                            >
+                              {isImage ? 'IMG' : 'PDF'}
+                            </span>
+                            <span className="text-sm font-metropolis text-gray-700 truncate group-hover:text-umak-blue">
+                              {name}
+                            </span>
+                          </div>
+                          <span className="text-xs font-metropolis font-semibold text-umak-blue flex-shrink-0 group-hover:underline">
+                            View →
+                          </span>
+                        </a>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* ④ ACTION ROW */}
         <div className="bg-white border border-gray-200 rounded-2xl px-6 py-5 flex items-center justify-between">

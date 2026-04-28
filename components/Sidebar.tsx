@@ -21,6 +21,7 @@ import {
 import { useSidebar } from '@/contexts/SidebarContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabaseClient } from '@/lib/supabase'
+import LogoutConfirmModal from '@/components/LogoutConfirmModal'
 
 interface MenuItem {
   label: string
@@ -93,8 +94,19 @@ export default function Sidebar() {
     }
   }, [])
 
+  const [logoutOpen, setLogoutOpen] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
+
+  const requestLogout = () => setLogoutOpen(true)
+
   const handleLogout = async () => {
-    await signOut()
+    setLoggingOut(true)
+    try {
+      await signOut()
+    } finally {
+      setLoggingOut(false)
+      setLogoutOpen(false)
+    }
   }
 
   // Get user initials
@@ -247,7 +259,7 @@ export default function Sidebar() {
               </div>
             </div>
             <button 
-              onClick={handleLogout}
+              onClick={requestLogout}
               className="flex items-center gap-2 px-4 py-3 w-full rounded-xl text-gray-200 hover:bg-red-600 hover:text-white transition-all font-metropolis"
             >
               <LogOut size={18} />
@@ -260,7 +272,7 @@ export default function Sidebar() {
               {getInitials()}
             </div>
             <button 
-              onClick={handleLogout}
+              onClick={requestLogout}
               className="flex items-center justify-center p-3 rounded-xl text-gray-200 hover:bg-red-600 hover:text-white transition-all"
               title="Logout"
             >
@@ -270,6 +282,13 @@ export default function Sidebar() {
         )}
       </div>
     </aside>
+
+    <LogoutConfirmModal
+      open={logoutOpen}
+      isLoggingOut={loggingOut}
+      onConfirm={handleLogout}
+      onCancel={() => setLogoutOpen(false)}
+    />
     </>
   )
 }

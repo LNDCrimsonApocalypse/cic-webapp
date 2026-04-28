@@ -37,10 +37,12 @@ export default function UserRecentSubmissions({
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-marcellus text-xl text-umak-blue">Recent Submissions</h2>
+        <h2 className="font-marcellus text-xl text-umak-blue dark:text-white">
+          Recent Submissions
+        </h2>
         <Link
           href="/usermyrequests"
-          className="font-metropolis text-sm font-semibold text-umak-blue hover:text-umak-yellow transition-colors"
+          className="font-metropolis text-sm font-semibold text-umak-blue dark:text-white hover:text-umak-yellow dark:hover:text-umak-yellow transition-colors"
         >
           View All &rarr;
         </Link>
@@ -90,7 +92,7 @@ export default function UserRecentSubmissions({
               <div
                 key={sub.id}
                 onClick={() => router.push('/usermyrequests')}
-                className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer"
+                className="group bg-white dark:bg-white/5 dark:backdrop-blur-md rounded-xl border border-gray-100 dark:border-white/10 shadow-sm hover:shadow-md hover:bg-white dark:hover:bg-white dark:hover:backdrop-blur-none transition-all duration-200 overflow-hidden cursor-pointer"
                 style={{ borderLeft: `4px solid ${accent.bar}` }}
               >
                 <div className="p-4 sm:p-5 flex items-center gap-4">
@@ -103,10 +105,10 @@ export default function UserRecentSubmissions({
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-metropolis font-bold text-umak-blue text-base sm:text-lg mb-1 truncate">
+                    <h3 className="font-metropolis font-bold text-umak-blue dark:text-white dark:group-hover:text-umak-blue text-base sm:text-lg mb-1 truncate transition-colors">
                       {title}
                     </h3>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-metropolis text-gray-500">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-metropolis text-gray-500 dark:text-white/80 dark:group-hover:text-gray-500 transition-colors">
                       <span className="inline-flex items-center gap-1.5">
                         <Calendar size={13} />
                         Submitted {format(new Date(sub.created_at), 'MMM d, yyyy')}
@@ -124,7 +126,7 @@ export default function UserRecentSubmissions({
 
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <UserStatusBadge status={sub.status} />
-                    <ChevronRight size={18} className="text-gray-300" />
+                    <ChevronRight size={18} className="text-gray-300 dark:text-white/40 dark:group-hover:text-gray-300 transition-colors" />
                   </div>
                 </div>
               </div>

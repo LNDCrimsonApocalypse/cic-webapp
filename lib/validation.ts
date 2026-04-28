@@ -46,5 +46,35 @@ export const corporateRequisitesSchema = z.object({
     .min(1, 'Please enter the draft citation, or type N/A if not applicable'),
 })
 
+// Social Media service-specific schema.
+export const socialMediaSchema = z.object({
+  ...requestorSchema,
+  socialMediaTypes: z
+    .array(
+      z.enum([
+        'Content Posting on Social Media',
+        'Sharing of Post from CCO’s Facebook Page',
+        'CCO Facebook Page Creation',
+        'Cover Photo Design',
+      ]),
+    )
+    .min(1, 'Select at least one type of social media request'),
+  keyInformation: z
+    .string()
+    .min(10, 'Please provide key information for the post content')
+    .max(2000, 'Too long'),
+  postingDate: z.string().min(1, 'Posting date is required'),
+  postingTimeHour: z
+    .string()
+    .regex(/^(0?[1-9]|1[0-2])$/, 'Hour must be between 1 and 12'),
+  postingTimeMinute: z
+    .string()
+    .regex(/^([0-5]?[0-9])$/, 'Minute must be between 00 and 59'),
+  postingTimeAmPm: z.enum(['AM', 'PM'], {
+    message: 'Select AM or PM',
+  }),
+})
+
 export type ValidatedFormData = z.infer<typeof requestFormSchema>
 export type ValidatedCorporateRequisites = z.infer<typeof corporateRequisitesSchema>
+export type ValidatedSocialMedia = z.infer<typeof socialMediaSchema>

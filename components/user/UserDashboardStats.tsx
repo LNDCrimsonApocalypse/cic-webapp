@@ -73,12 +73,10 @@ export default function UserDashboardStats({ stats, loading = false }: UserDashb
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((c) => (
-          <div key={c.label} className="bg-umak-blue rounded-xl p-6 shadow-sm animate-pulse">
-            <div className="h-8 w-8 bg-umak-blue-50 rounded mb-4" />
-            <div className="h-3 w-20 bg-umak-blue-50 rounded mb-3" />
-            <div className="h-10 w-16 bg-umak-blue-50 rounded mb-2" />
-            <div className="h-3 w-24 bg-umak-blue-50 rounded" />
-          </div>
+          <div
+            key={c.label}
+            className="rounded-r-xl p-6 animate-pulse h-[168px] bg-white dark:bg-umak-blue border-l-8 border-gray-200 dark:border-white/10 shadow-md"
+          />
         ))}
       </div>
     )
@@ -97,16 +95,16 @@ export default function UserDashboardStats({ stats, loading = false }: UserDashb
             onMouseLeave={() => setHoveredIdx(null)}
             onFocus={() => setHoveredIdx(idx)}
             onBlur={() => setHoveredIdx(null)}
-            className="group bg-umak-blue rounded-l-none rounded-r-xl p-6 text-left hover:-translate-y-1 transition-all duration-200 cursor-pointer"
+            className="group bg-white dark:bg-umak-blue rounded-l-none rounded-r-xl p-6 text-left hover:-translate-y-1 transition-all duration-200 cursor-pointer block ring-1 ring-gray-100 dark:ring-0"
             style={{
               borderLeft: `8px solid ${card.accentColor}`,
               boxShadow: isHovered
                 ? `0 18px 40px -10px ${card.accentColor}80, 0 8px 20px -8px ${card.accentColor}55`
-                : '0 1px 2px 0 rgba(0,0,0,0.08)',
+                : '0 6px 14px -8px rgba(0,0,0,0.18), 0 2px 4px -2px rgba(0,0,0,0.08)',
             }}
           >
             <Icon size={28} className="mb-4" style={{ color: card.accentColor }} />
-            <p className="text-xs uppercase tracking-wider text-gray-300 font-metropolis mb-2">
+            <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-300 font-metropolis mb-2">
               {card.label}
             </p>
             <p
@@ -115,7 +113,9 @@ export default function UserDashboardStats({ stats, loading = false }: UserDashb
             >
               {card.value}
             </p>
-            <p className="text-xs text-gray-300 font-metropolis">{card.sublabel}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-300 font-metropolis">
+              {card.sublabel}
+            </p>
           </button>
         )
       })}

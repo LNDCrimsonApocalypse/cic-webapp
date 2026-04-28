@@ -72,11 +72,11 @@ export default function UserMyRequestsPage() {
   return (
     <div className="min-h-screen">
       <UserPageHeader title="My Requests" subtitle="View and track all your submissions." />
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
-        <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col sm:flex-row gap-4">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+        <div className="bg-white dark:bg-white/5 dark:backdrop-blur-md dark:border dark:border-white/10 rounded-xl shadow-sm p-4 flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
             <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/50"
               size={18}
             />
             <input
@@ -84,7 +84,7 @@ export default function UserMyRequestsPage() {
               placeholder="Search your requests..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg font-metropolis text-sm focus:outline-none focus:border-umak-blue"
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg font-metropolis text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 focus:outline-none focus:border-umak-blue dark:focus:border-umak-yellow"
             />
           </div>
 
@@ -95,8 +95,8 @@ export default function UserMyRequestsPage() {
                 onClick={() => setStatusFilter(s)}
                 className={`px-4 py-2 rounded-lg text-xs font-metropolis font-semibold uppercase tracking-wider transition-all ${
                   statusFilter === s
-                    ? 'bg-umak-blue text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-umak-blue text-white dark:bg-umak-yellow dark:text-umak-blue'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/20'
                 }`}
               >
                 {s === 'all' ? 'All' : s}
@@ -113,14 +113,16 @@ export default function UserMyRequestsPage() {
         </div>
 
         {loading ? (
-          <div className="bg-white rounded-xl shadow-sm p-12 text-center text-gray-500 font-metropolis">
+          <div className="bg-white dark:bg-white/5 dark:backdrop-blur-md dark:border dark:border-white/10 rounded-xl shadow-sm p-12 text-center text-gray-500 dark:text-white/70 font-metropolis">
             Loading...
           </div>
         ) : filtered.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-            <Inbox className="mx-auto text-gray-300 mb-4" size={48} />
-            <h3 className="font-marcellus text-xl text-gray-600 mb-2">No requests found</h3>
-            <p className="font-metropolis text-sm text-gray-500 mb-4">
+          <div className="bg-white dark:bg-white/5 dark:backdrop-blur-md dark:border dark:border-white/10 rounded-xl shadow-sm p-12 text-center">
+            <Inbox className="mx-auto text-gray-300 dark:text-white/40 mb-4" size={48} />
+            <h3 className="font-marcellus text-xl text-gray-600 dark:text-white mb-2">
+              No requests found
+            </h3>
+            <p className="font-metropolis text-sm text-gray-500 dark:text-white/70 mb-4">
               {submissions.length === 0
                 ? "You haven't submitted any requests yet."
                 : 'Try adjusting your filters.'}
@@ -147,7 +149,7 @@ export default function UserMyRequestsPage() {
                 <div
                   key={sub.id}
                   onClick={() => router.push(`/usermyrequests/${sub.id}`)}
-                  className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer"
+                  className="group bg-white dark:bg-white/5 dark:backdrop-blur-md rounded-xl border border-gray-100 dark:border-white/10 shadow-sm hover:shadow-md hover:bg-white dark:hover:bg-white dark:hover:backdrop-blur-none transition-all duration-200 overflow-hidden cursor-pointer"
                   style={{ borderLeft: `4px solid ${accent.bar}` }}
                 >
                   <div className="p-4 sm:p-5 flex items-center gap-4">
@@ -160,10 +162,10 @@ export default function UserMyRequestsPage() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-metropolis font-bold text-umak-blue text-base sm:text-lg mb-1 truncate">
+                      <h3 className="font-metropolis font-bold text-umak-blue dark:text-white dark:group-hover:text-umak-blue text-base sm:text-lg mb-1 truncate transition-colors">
                         {title}
                       </h3>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-metropolis text-gray-500">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-metropolis text-gray-500 dark:text-white/80 dark:group-hover:text-gray-500 transition-colors">
                         <span className="inline-flex items-center gap-1.5">
                           <Calendar size={13} />
                           Submitted {format(new Date(sub.created_at), 'MMM d, yyyy')}
@@ -181,7 +183,7 @@ export default function UserMyRequestsPage() {
 
                     <div className="flex items-center gap-3 flex-shrink-0">
                       <UserStatusBadge status={sub.status} />
-                      <ChevronRight size={18} className="text-gray-300" />
+                      <ChevronRight size={18} className="text-gray-300 dark:text-white/40 dark:group-hover:text-gray-300 transition-colors" />
                     </div>
                   </div>
                 </div>
@@ -191,7 +193,7 @@ export default function UserMyRequestsPage() {
         )}
 
         {!loading && filtered.length > 0 && (
-          <p className="text-sm text-gray-500 font-metropolis text-center">
+          <p className="text-sm text-gray-500 dark:text-white/60 font-metropolis text-center">
             Showing {filtered.length} of {submissions.length} requests
           </p>
         )}

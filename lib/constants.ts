@@ -24,4 +24,10 @@ export const INITIAL_FORM_DATA: FormData = {
   department: '',
   requestDetails: '',
   deadline: '',
+  socialMediaTypes: [],
+  keyInformation: '',
+  postingDate: '',
+  postingTimeHour: '',
+  postingTimeMinute: '',
+  postingTimeAmPm: '',
 }

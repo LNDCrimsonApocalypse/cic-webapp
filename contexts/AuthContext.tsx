@@ -215,14 +215,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     if (!supabaseClient) return
 
-    try {
-      await supabaseClient.auth.signOut()
-      setUser(null)
-      setProfile(null)
-      router.push('/')
-    } catch (error) {
+    // Clear local auth state and hard-navigate immediately so the user lands
+    // on '/' without waiting on Supabase's server-side session invalidation.
+    // The signOut network call still fires; it just runs in the background and
+    // any errors are logged but never block the UX.
+    setUser(null)
+    setProfile(null)
+    supabaseClient.auth.signOut().catch((error) => {
       console.error('Error signing out:', error)
-    }
+    })
+    window.location.href = '/'
   }
 
   const isAdmin = profile?.role === 'admin'

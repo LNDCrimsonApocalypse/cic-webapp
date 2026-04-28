@@ -9,10 +9,10 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="flex min-h-screen bg-gray-50 dark:bg-gradient-to-br dark:from-[#020727] dark:via-[#060e33] dark:to-[#020727] transition-colors duration-300">
         <UserSidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
         <main
-          className="flex-1 transition-all duration-300 min-h-screen w-full"
+          className="flex-1 transition-all duration-300 min-h-screen w-full overflow-x-hidden"
           style={{ marginLeft: sidebarOpen ? '256px' : '80px' }}
         >
           {children}

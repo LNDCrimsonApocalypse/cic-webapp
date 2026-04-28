@@ -17,6 +17,12 @@ export type CorporateRequisiteType =
   | 'Standardized Corporate Giveaways'
   | 'Trophies'
 
+export type SocialMediaRequestType =
+  | 'Content Posting on Social Media'
+  | 'Sharing of Post from CCO’s Facebook Page'
+  | 'CCO Facebook Page Creation'
+  | 'Cover Photo Design'
+
 export interface FormData {
   // Requestor info (all services)
   name: string
@@ -34,6 +40,14 @@ export interface FormData {
   eventDate?: string
   quantity?: string
   draftCitation?: string
+
+  // Social Media fields (only filled when that service is selected)
+  socialMediaTypes?: SocialMediaRequestType[]
+  keyInformation?: string
+  postingDate?: string
+  postingTimeHour?: string
+  postingTimeMinute?: string
+  postingTimeAmPm?: 'AM' | 'PM' | ''
 }
 
 export type FormErrors = Partial<Record<keyof FormData, string>>

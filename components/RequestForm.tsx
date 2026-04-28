@@ -1,11 +1,18 @@
 'use client'
 
 import React, { useState } from 'react'
-import { FormData, FormErrors } from '@/lib/types'
+import { FormData, FormErrors, SocialMediaRequestType } from '@/lib/types'
 import FormField from './FormField'
 import SearchableSelect from './SearchableSelect'
 import SubmitConfirmModal from './SubmitConfirmModal'
 import { OFFICE_GROUPS } from '@/lib/offices'
+
+const SOCIAL_MEDIA_TYPES: SocialMediaRequestType[] = [
+  'Content Posting on Social Media',
+  'Sharing of Post from CCO’s Facebook Page',
+  'CCO Facebook Page Creation',
+  'Cover Photo Design',
+]
 
 interface RequestFormProps {
   serviceType: string
@@ -13,7 +20,11 @@ interface RequestFormProps {
   errors: FormErrors
   isSubmitting: boolean
   submissionError?: string
+  attachedFiles?: File[]
   onInputChange: (name: keyof FormData, value: string) => void
+  onToggleSocialMediaType?: (type: SocialMediaRequestType) => void
+  onAddAttachedFiles?: (files: File[]) => void
+  onRemoveAttachedFile?: (index: number) => void
   onSubmit: (e: React.FormEvent) => void
   onCancel: () => void
 }
@@ -59,12 +70,25 @@ export default function RequestForm({
   errors,
   isSubmitting,
   submissionError,
+  attachedFiles = [],
   onInputChange,
+  onToggleSocialMediaType,
+  onAddAttachedFiles,
+  onRemoveAttachedFile,
   onSubmit,
   onCancel,
 }: RequestFormProps) {
   const [showConfirm, setShowConfirm] = useState(false)
   const isCorporateRequisites = serviceType === 'design'
+  const isSocialMedia = serviceType === 'social-media'
+
+  const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files ?? [])
+    if (picked.length === 0) return
+    onAddAttachedFiles?.(picked)
+    // Reset the input so selecting the same file twice still fires onChange.
+    e.target.value = ''
+  }
 
   // Intercept form submit → open the confirmation modal instead of submitting directly.
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -216,6 +240,209 @@ export default function RequestForm({
                 />
               </div>
             </>
+          ) : isSocialMedia ? (
+            <div className="space-y-6">
+              {/* Type of Social Media Request (checkboxes) */}
+              <fieldset>
+                <legend className="text-sm text-gray-700 font-metropolis font-semibold mb-2">
+                  Type of Social Media Request{' '}
+                  <span className="text-red-500">*</span>
+                </legend>
+                <div className="space-y-2">
+                  {SOCIAL_MEDIA_TYPES.map((type) => {
+                    const checked =
+                      formData.socialMediaTypes?.includes(type) ?? false
+                    return (
+                      <label
+                        key={type}
+                        className="flex items-center gap-3 cursor-pointer group"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => onToggleSocialMediaType?.(type)}
+                          className="w-4 h-4 rounded border-gray-300 text-umak-blue focus:ring-umak-blue/20 cursor-pointer"
+                        />
+                        <span className="text-sm font-metropolis text-gray-700 group-hover:text-umak-blue">
+                          {type}
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+                {errors.socialMediaTypes && (
+                  <p className="text-red-500 text-xs mt-2 font-metropolis">
+                    {errors.socialMediaTypes}
+                  </p>
+                )}
+              </fieldset>
+
+              {/* Key Information for Post Content */}
+              <FormField
+                label="Key Information for Post Content"
+                name="keyInformation"
+                type="textarea"
+                value={formData.keyInformation || ''}
+                onChange={(value) => onInputChange('keyInformation', value)}
+                error={errors.keyInformation}
+                required
+                rows={4}
+                resize="vertical"
+                minHeight="100px"
+                placeholder="Provide the caption, key messages, hashtags, links, and any other relevant details for the post..."
+              />
+
+              {/* Date of Posting */}
+              <FormField
+                label="Date of Posting"
+                name="postingDate"
+                type="date"
+                value={formData.postingDate || ''}
+                onChange={(value) => onInputChange('postingDate', value)}
+                error={errors.postingDate}
+                required
+                min={new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+                  .toISOString()
+                  .split('T')[0]}
+                helpText="Note: MINIMUM OF 2 WEEKS after submission."
+              />
+
+              {/* Time of Posting */}
+              <div>
+                <label className="block text-sm text-gray-700 mb-1.5 font-metropolis font-semibold">
+                  Time of Posting <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={2}
+                    placeholder="HH"
+                    value={formData.postingTimeHour || ''}
+                    onChange={(e) =>
+                      onInputChange(
+                        'postingTimeHour',
+                        e.target.value.replace(/[^0-9]/g, ''),
+                      )
+                    }
+                    className="w-16 px-3 py-2.5 border border-gray-200 rounded-md focus:border-umak-blue focus:ring-2 focus:ring-umak-blue/20 focus:outline-none font-metropolis text-sm text-center"
+                  />
+                  <span className="text-gray-400 font-semibold">:</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={2}
+                    placeholder="MM"
+                    value={formData.postingTimeMinute || ''}
+                    onChange={(e) =>
+                      onInputChange(
+                        'postingTimeMinute',
+                        e.target.value.replace(/[^0-9]/g, ''),
+                      )
+                    }
+                    className="w-16 px-3 py-2.5 border border-gray-200 rounded-md focus:border-umak-blue focus:ring-2 focus:ring-umak-blue/20 focus:outline-none font-metropolis text-sm text-center"
+                  />
+                  <select
+                    value={formData.postingTimeAmPm || ''}
+                    onChange={(e) =>
+                      onInputChange('postingTimeAmPm', e.target.value)
+                    }
+                    className="px-3 py-2.5 border border-gray-200 rounded-md focus:border-umak-blue focus:ring-2 focus:ring-umak-blue/20 focus:outline-none font-metropolis text-sm"
+                  >
+                    <option value="" disabled>
+                      —
+                    </option>
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
+                <p className="text-xs text-gray-500 mt-1.5 font-metropolis">
+                  Hour : Minutes
+                </p>
+                {(errors.postingTimeHour ||
+                  errors.postingTimeMinute ||
+                  errors.postingTimeAmPm) && (
+                  <p className="text-red-500 text-xs mt-1 font-metropolis">
+                    {errors.postingTimeHour ||
+                      errors.postingTimeMinute ||
+                      errors.postingTimeAmPm}
+                  </p>
+                )}
+              </div>
+
+              {/* Attach File (with name list) */}
+              <div>
+                <label
+                  htmlFor="social-media-attachments"
+                  className="block text-sm text-gray-700 mb-1.5 font-metropolis font-semibold"
+                >
+                  Attach File
+                </label>
+                <label
+                  htmlFor="social-media-attachments"
+                  className="block border-2 border-dashed border-gray-300 rounded-md p-8 text-center hover:border-umak-blue hover:bg-blue-50/50 transition-all cursor-pointer"
+                >
+                  <div className="text-gray-400 mb-3">
+                    <svg
+                      className="w-10 h-10 mx-auto"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                      />
+                    </svg>
+                  </div>
+                  <p className="text-umak-blue font-metropolis font-semibold text-sm">
+                    Browse Files
+                  </p>
+                  <p className="text-xs text-gray-500 font-metropolis mt-0.5">
+                    Drag and drop files here
+                  </p>
+                  <p className="text-xs text-gray-400 font-metropolis mt-2">
+                    Max. of 5MB · PNG, JPEG, PDF
+                  </p>
+                  <input
+                    id="social-media-attachments"
+                    type="file"
+                    multiple
+                    accept="image/png,image/jpeg,application/pdf"
+                    onChange={handleFilesChange}
+                    className="sr-only"
+                  />
+                </label>
+
+                {attachedFiles.length > 0 && (
+                  <ul className="mt-3 space-y-1.5">
+                    {attachedFiles.map((file, i) => (
+                      <li
+                        key={`${file.name}-${i}`}
+                        className="flex items-center justify-between gap-3 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-xs font-metropolis"
+                      >
+                        <span className="text-gray-700 truncate flex-1">
+                          {file.name}
+                        </span>
+                        <span className="text-gray-400 flex-shrink-0">
+                          {(file.size / 1024).toFixed(0)} KB
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => onRemoveAttachedFile?.(i)}
+                          className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                          aria-label={`Remove ${file.name}`}
+                        >
+                          ✕
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
           ) : (
             <div className="space-y-8">
               {/* Generic request details */}

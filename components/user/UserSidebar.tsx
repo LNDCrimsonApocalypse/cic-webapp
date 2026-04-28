@@ -11,8 +11,10 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
+import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getDisplayName, getInitials } from '@/lib/get-display-name'
+import LogoutConfirmModal from '@/components/LogoutConfirmModal'
 
 interface UserSidebarProps {
   isOpen: boolean
@@ -29,8 +31,19 @@ export default function UserSidebar({ isOpen, onToggle }: UserSidebarProps) {
   const pathname = usePathname()
   const { user, profile, signOut } = useAuth()
 
+  const [logoutOpen, setLogoutOpen] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
+
+  const requestLogout = () => setLogoutOpen(true)
+
   const handleLogout = async () => {
-    await signOut()
+    setLoggingOut(true)
+    try {
+      await signOut()
+    } finally {
+      setLoggingOut(false)
+      setLogoutOpen(false)
+    }
   }
 
   const displayName = getDisplayName(user, profile)
@@ -131,7 +144,7 @@ export default function UserSidebar({ isOpen, onToggle }: UserSidebarProps) {
                 </div>
               </div>
               <button
-                onClick={handleLogout}
+                onClick={requestLogout}
                 className="flex items-center gap-2 px-4 py-3 w-full rounded-xl text-gray-200 hover:bg-red-600 hover:text-white transition-all font-metropolis"
               >
                 <LogOut size={18} />
@@ -147,7 +160,7 @@ export default function UserSidebar({ isOpen, onToggle }: UserSidebarProps) {
                 {initials}
               </div>
               <button
-                onClick={handleLogout}
+                onClick={requestLogout}
                 className="flex items-center justify-center p-3 rounded-xl text-gray-200 hover:bg-red-600 hover:text-white transition-all"
                 title="Logout"
                 aria-label="Logout"
@@ -158,6 +171,13 @@ export default function UserSidebar({ isOpen, onToggle }: UserSidebarProps) {
           )}
         </div>
       </aside>
+
+      <LogoutConfirmModal
+        open={logoutOpen}
+        isLoggingOut={loggingOut}
+        onConfirm={handleLogout}
+        onCancel={() => setLogoutOpen(false)}
+      />
     </>
   )
 }
